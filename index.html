@@ -86,7 +86,9 @@
            var percentTabelle =  document.getElementById("percent").firstChild.nodeValue;
          
 
-            let percent = prompt("Please enter Gradido %", percentTabelle).replace(",",".");
+            let eingabe = prompt("Please enter Gradido %", percentTabelle);
+            if (eingabe === null) { return; }   // "Abbrechen": Prozentsatz unveraendert lassen
+            let percent = eingabe.replace(",",".");
 
             if (percent != null) {
 
@@ -113,11 +115,77 @@
             calculateResult();
         }
 
+        // Sicherer Ersatz fuer eval(): wertet den eingegebenen Ausdruck aus.
+        // Erlaubt nur Zahlen und die Operatoren + - * / (Punkt vor Strich).
+        // Liefert NaN bei leerer oder unzulaessiger Eingabe (statt abzustuerzen).
+        function safeCalc(ausdruck) {
+            if (ausdruck == null) { return NaN; }
+            if (!/^[0-9.,+\-*/ ]*$/.test(ausdruck)) { return NaN; }
+            var s = ausdruck.replace(/,/g, '.').trim();
+            if (s === '') { return NaN; }
+
+            // 1) In Zahlen und Operatoren zerlegen
+            var tokens = [];
+            var i = 0;
+            while (i < s.length) {
+                var ch = s[i];
+                if (ch === ' ') { i++; continue; }
+                if ('+-*/'.indexOf(ch) !== -1) {
+                    var prev = tokens[tokens.length - 1];
+                    var istVorzeichen = (tokens.length === 0) || (prev && prev.op !== undefined);
+                    if ((ch === '+' || ch === '-') && istVorzeichen) {
+                        var sign = (ch === '-') ? -1 : 1;
+                        i++;
+                        while (s[i] === ' ') { i++; }
+                        var z = '';
+                        while (i < s.length && /[0-9.]/.test(s[i])) { z += s[i]; i++; }
+                        if (z === '' || isNaN(parseFloat(z))) { return NaN; }
+                        tokens.push({ val: sign * parseFloat(z) });
+                    } else {
+                        tokens.push({ op: ch });
+                        i++;
+                    }
+                } else if (/[0-9.]/.test(ch)) {
+                    var n = '';
+                    while (i < s.length && /[0-9.]/.test(s[i])) { n += s[i]; i++; }
+                    if (isNaN(parseFloat(n))) { return NaN; }
+                    tokens.push({ val: parseFloat(n) });
+                } else {
+                    return NaN;
+                }
+            }
+            if (tokens.length === 0 || tokens[0].val === undefined) { return NaN; }
+
+            // 2) Punkt vor Strich: erst * und /
+            var stufe = [tokens[0]];
+            for (var k = 1; k < tokens.length; k += 2) {
+                var op = tokens[k], rhs = tokens[k + 1];
+                if (!op || op.op === undefined || !rhs || rhs.val === undefined) { return NaN; }
+                if (op.op === '*' || op.op === '/') {
+                    var links = stufe[stufe.length - 1];
+                    links.val = (op.op === '*') ? links.val * rhs.val : links.val / rhs.val;
+                } else {
+                    stufe.push(op, rhs);
+                }
+            }
+
+            // 3) dann + und -
+            var ergebnis = stufe[0].val;
+            for (var m = 1; m < stufe.length; m += 2) {
+                var o = stufe[m], r = stufe[m + 1];
+                if (!o || o.op === undefined || !r || r.val === undefined) { return NaN; }
+                ergebnis = (o.op === '+') ? ergebnis + r.val : ergebnis - r.val;
+            }
+            if (!isFinite(ergebnis)) { return NaN; }
+            return ergebnis;
+        }
+
         // Ergebnis berechnen
 
         function calculateResult() {
             let container = document.getElementById('resultArea');
-            let result = eval(container.innerHTML);
+            let result = safeCalc(container.innerHTML);
+            if (isNaN(result)) { return; }   // leere oder unzulaessige Eingabe: nichts tun
             container.innerHTML = result.toFixed(2);
             document.getElementById("resultArea").style.fontSize = "64px";
             
@@ -147,10 +215,9 @@
             let container2 = document.getElementById('resultArea2');
            
             let container = document.getElementById('resultArea');
-            let result = eval(container.innerHTML).toFixed(2);
-            if( isNaN(result)) {
-                result = 0
-            }
+            let zahl = safeCalc(container.innerHTML);
+            if (isNaN(zahl)) { return; }   // leere oder unzulaessige Eingabe: nichts tun
+            let result = zahl.toFixed(2);
             var gdd = result*faktor1;
             container2.innerHTML = "Factor " + faktor1.toFixed(4) + "<br/>" + result +" DankBar = " + gdd.toFixed(2) + " Gradido";
             

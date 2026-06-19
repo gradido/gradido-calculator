@@ -10,7 +10,7 @@
  * aus dem Cache. Alte Caches werden beim 'activate' automatisch gelöscht.
  */
 
-const CACHE_NAME = 'gradido-calc-v10';
+const CACHE_NAME = 'gradido-calc-v11';
 
 const ASSETS = [
     './',
@@ -26,10 +26,12 @@ const ASSETS = [
 ];
 
 // Installieren: alle App-Dateien in den Cache laden.
+// 'reload' erzwingt frische Dateien aus dem Netz statt aus dem HTTP-Cache des
+// Browsers — sonst koennte eine veraltete Version vorab-gecacht werden.
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll(ASSETS))
+            .then((cache) => cache.addAll(ASSETS.map((url) => new Request(url, { cache: 'reload' }))))
             .then(() => self.skipWaiting())
     );
 });

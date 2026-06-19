@@ -23,6 +23,9 @@
 		var faktor1 = Math.pow(0.998098, tag-1);
 		var faktor2 = 1 / faktor1;
 
+        // true direkt nach einem Ergebnis ("="): die naechste Ziffer beginnt eine neue Zahl
+        var justCalculated = false;
+
 
         // --- Helfer fuer Zahlen-Formatierung (US-Stil: Punkt = Dezimal, Komma = Tausender) ---
 
@@ -70,6 +73,13 @@
 
             var istOperator = (typeof operation === 'string') && /[+\-*/]/.test(operation);
 
+            // Nach einem Ergebnis ("="): Ziffer/Punkt beginnt eine neue Zahl,
+            // ein Operator rechnet mit dem Ergebnis weiter.
+            if (justCalculated) {
+                justCalculated = false;
+                if (!istOperator) { display = ''; }
+            }
+
             if (istOperator) {
                 var cur = currentNumber(display);
                 if (cur === '' || cur.charAt(cur.length - 1) === '.') { return; }   // kein Operator ohne abgeschlossene Zahl
@@ -97,6 +107,7 @@
         // Letztes Zeichen loeschen
         function deleteLast() {
             // Ergebnisse unten NICHT loeschen — sie bleiben bis "AC" stehen
+            justCalculated = false;
             var display = document.getElementById('resultArea').innerHTML;
             if (display === '') { return; }
             if (display.charAt(display.length - 1) === ' ') {
@@ -130,7 +141,7 @@
         function allClear() {
             document.getElementById('resultArea').innerHTML = "";
             document.getElementById('resultArea2').innerHTML = "";
-
+            justCalculated = false;
         }
 
         // GradidoRabatt ändern und Ergebnisse anpassen
@@ -289,6 +300,7 @@
             else {
                 document.getElementById('resultArea2').innerHTML = "";
             }
+            justCalculated = true;
         }
 
 
@@ -302,6 +314,7 @@
             container.innerHTML = formatResult(zahl);
             var gdd = zahl * faktor1;
             container2.innerHTML = "Factor " + faktor1.toFixed(4) + "<br/>" + formatResult(zahl) + " DankBar = " + formatResult(gdd) + " Gradido";
+            justCalculated = true;
         }
 
     </script>

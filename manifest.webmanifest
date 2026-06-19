@@ -5,7 +5,7 @@
     "scope": "./",
     "start_url": "./index.html",
     "name": "Gradido Calculator",
-    "short_name": "Gradido Calculator",
+    "short_name": "GDD Calculator",
     "description": "Einfacher Taschenrechner mit GradidoRabatt und DankBar-Umrechnung",
     "icons": [
         {

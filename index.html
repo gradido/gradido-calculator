@@ -392,11 +392,21 @@
 
  </table>
 
-    <!-- Service Worker registrieren: macht die App offline-faehig -->
+    <!-- Service Worker registrieren: offline-faehig + automatisches Update -->
     <script>
         if ('serviceWorker' in navigator) {
+            // Beim Erstbesuch gibt es noch keinen Controller -> dann NICHT neu laden.
+            var hadController = !!navigator.serviceWorker.controller;
+            var refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', function () {
+                if (refreshing || !hadController) { return; }
+                refreshing = true;
+                window.location.reload();   // neue Version sofort uebernehmen (kein mehrfaches Neuladen noetig)
+            });
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('sw.js').catch(function (err) {
+                navigator.serviceWorker.register('sw.js').then(function (reg) {
+                    reg.update();   // bei jedem Start auf neue Version pruefen
+                }).catch(function (err) {
                     console.error('Service-Worker-Registrierung fehlgeschlagen:', err);
                 });
             });

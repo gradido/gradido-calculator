@@ -4,8 +4,8 @@
     "display": "fullscreen",
     "scope": "./",
     "start_url": "./index.html",
-    "name": "Simple Gradido Calculator",
-    "short_name": "GDD Calculator",
+    "name": "Gradido Calculator",
+    "short_name": "Gradido Calculator",
     "description": "Einfacher Taschenrechner mit GradidoRabatt und DankBar-Umrechnung",
     "icons": [
         {

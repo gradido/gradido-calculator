@@ -129,16 +129,16 @@
                 var osc = ctx.createOscillator();
                 var gain = ctx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(820, now);            // Tonhoehe: groesser = heller
-                osc.frequency.exponentialRampToValueAtTime(560, now + 0.11);
+                osc.frequency.setValueAtTime(432, now);            // Tonhoehe: groesser = heller
+                osc.frequency.exponentialRampToValueAtTime(288, now + 0.08);
                 // weiche Huellkurve, damit es nicht knackt: schneller Anstieg, sanftes Ausklingen
                 gain.gain.setValueAtTime(0.0001, now);
                 gain.gain.exponentialRampToValueAtTime(0.09, now + 0.010);   // 0.09 = Lautstaerke
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
                 osc.connect(gain);
                 gain.connect(ctx.destination);
                 osc.start(now);
-                osc.stop(now + 0.15);
+                osc.stop(now + 0.11);
             } catch (e) { /* Ton ist optional: niemals einen Fehler nach aussen tragen */ }
         }
 

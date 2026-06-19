@@ -124,26 +124,21 @@
                 if (!__klangCtx) { __klangCtx = new AC(); }
                 var ctx = __klangCtx;
                 if (ctx.state === 'suspended') { ctx.resume(); }
-                // kurzer, abklingender Rausch-Tick durch ein Bandpassfilter
-                var dauer = 0.03;
-                var laenge = Math.floor(ctx.sampleRate * dauer);
-                var buffer = ctx.createBuffer(1, laenge, ctx.sampleRate);
-                var daten = buffer.getChannelData(0);
-                for (var j = 0; j < laenge; j++) {
-                    daten[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / laenge, 3);
-                }
-                var quelle = ctx.createBufferSource();
-                quelle.buffer = buffer;
-                var filter = ctx.createBiquadFilter();
-                filter.type = 'bandpass';
-                filter.frequency.value = 1700;
-                filter.Q.value = 0.8;
+                // sanfter digitaler Blip: kurzer Sinus-Ton mit leichtem Abwaerts-Gleiten
+                var now = ctx.currentTime;
+                var osc = ctx.createOscillator();
                 var gain = ctx.createGain();
-                gain.gain.value = 0.07;   // Lautstaerke: 0 = stumm, groesser = lauter
-                quelle.connect(filter);
-                filter.connect(gain);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(820, now);            // Tonhoehe: groesser = heller
+                osc.frequency.exponentialRampToValueAtTime(560, now + 0.11);
+                // weiche Huellkurve, damit es nicht knackt: schneller Anstieg, sanftes Ausklingen
+                gain.gain.setValueAtTime(0.0001, now);
+                gain.gain.exponentialRampToValueAtTime(0.09, now + 0.010);   // 0.09 = Lautstaerke
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
+                osc.connect(gain);
                 gain.connect(ctx.destination);
-                quelle.start();
+                osc.start(now);
+                osc.stop(now + 0.15);
             } catch (e) { /* Ton ist optional: niemals einen Fehler nach aussen tragen */ }
         }
 

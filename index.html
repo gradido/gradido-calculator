@@ -115,6 +115,46 @@
             calculateResult();
         }
 
+        // Leiser Tasten-Klick, per Web Audio erzeugt (keine Audiodatei -> offline-faehig)
+        var __klangCtx = null;
+        function playClick() {
+            try {
+                var AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) { return; }
+                if (!__klangCtx) { __klangCtx = new AC(); }
+                var ctx = __klangCtx;
+                if (ctx.state === 'suspended') { ctx.resume(); }
+                // kurzer, abklingender Rausch-Tick durch ein Bandpassfilter
+                var dauer = 0.03;
+                var laenge = Math.floor(ctx.sampleRate * dauer);
+                var buffer = ctx.createBuffer(1, laenge, ctx.sampleRate);
+                var daten = buffer.getChannelData(0);
+                for (var j = 0; j < laenge; j++) {
+                    daten[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / laenge, 3);
+                }
+                var quelle = ctx.createBufferSource();
+                quelle.buffer = buffer;
+                var filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 1700;
+                filter.Q.value = 0.8;
+                var gain = ctx.createGain();
+                gain.gain.value = 0.07;   // Lautstaerke: 0 = stumm, groesser = lauter
+                quelle.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                quelle.start();
+            } catch (e) { /* Ton ist optional: niemals einen Fehler nach aussen tragen */ }
+        }
+
+        // Jede Taste bekommt den Klick (Capture-Phase: erst Klang, dann die Aktion)
+        window.addEventListener('DOMContentLoaded', function () {
+            var tasten = document.querySelectorAll('td[onclick]');
+            for (var t = 0; t < tasten.length; t++) {
+                tasten[t].addEventListener('click', playClick, true);
+            }
+        });
+
         // Sicherer Ersatz fuer eval(): wertet den eingegebenen Ausdruck aus.
         // Erlaubt nur Zahlen und die Operatoren + - * / (Punkt vor Strich).
         // Liefert NaN bei leerer oder unzulaessiger Eingabe (statt abzustuerzen).

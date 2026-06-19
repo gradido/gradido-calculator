@@ -220,9 +220,10 @@
         // Liefert NaN bei leerer oder unzulaessiger Eingabe (statt abzustuerzen).
         function safeCalc(ausdruck) {
             if (ausdruck == null) { return NaN; }
-            if (!/^[0-9.,+\-*/ ]*$/.test(ausdruck)) { return NaN; }
-            var s = ausdruck.replace(/,/g, '').trim();   // Tausender-Trenner entfernen
+            // Leerraum (auch Zeilenumbrueche aus dem HTML) und Tausender-Komma entfernen
+            var s = String(ausdruck).replace(/\s/g, '').replace(/,/g, '');
             if (s === '') { return NaN; }
+            if (!/^[0-9.+\-*/]*$/.test(s)) { return NaN; }
 
             // 1) In Zahlen und Operatoren zerlegen
             var tokens = [];
@@ -326,8 +327,7 @@
 
     <img id="logo" src="gradido-coin.png" alt="Gradido Coin">
 
-    <div id="resultArea" class="resultArea">
-    </div>
+    <div id="resultArea" class="resultArea"></div>
 
     <div id="discountTable"  class="resultArea">
         <table class = "discountTable">
@@ -342,9 +342,7 @@
         </table>
     </div>
 
-    <div id="resultArea2"  class="resultArea">
-
-    </div>
+    <div id="resultArea2"  class="resultArea"></div>
 
 
  <table>

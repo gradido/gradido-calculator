@@ -1,0 +1,107 @@
+
+body{
+
+    font-family: 'Montserrat', sans-serif;
+    color: rgb(255, 253, 253) ;
+    margin: 0;
+
+}
+table{
+ width: 100%;  
+ height: 70vh;
+ background-color: rgb(30, 30, 30); 
+ 
+ color:rgb(198, 190, 190) ;
+ font-family: 'Montserrat', sans-serif;
+}
+td{
+    width: 25%;
+    text-align: center;
+    font-size: 36px;
+    background-color: rgb(20, 22, 18); 
+}
+td:hover{
+    background-color: rgb(30, 30, 30);
+    color: rgb(255, 253, 253) ;
+    cursor: pointer;
+} 
+
+
+.resultArea{
+    background-color: rgb(40, 40, 40);
+    color: rgb(255, 253, 253);
+    display:flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+#resultArea{
+    height: 15vh;  
+    font-size: 64px; 
+    padding-bottom: 48px;
+}
+
+#resultArea2{
+    height: 10vh;
+    font-size: 18px;
+    text-align: right; 
+    padding-top: 0px;
+    padding-bottom: 12px;
+}
+
+#discountTable {
+    height: 5vh;
+    padding-bottom: 0px;  
+}
+.discountTable {
+height: 10px;
+font-size: 16px;
+color: rgb(132, 174, 116);
+text-align: right;
+background-color: rgb(40, 40, 40);
+
+}
+
+#percent{
+    width: 10%;
+}
+
+#discount {
+    width: 95%;  
+}
+
+
+.result{
+    background-color: rgb(9, 5, 64); 
+
+}
+.result:hover{
+    background-color: rgb(10, 5, 76); 
+}
+
+#dankBarButton {
+    font-size: 22px;   
+}
+
+.highlight{
+    background-color: rgb(27, 80, 7); 
+
+}
+
+
+.highlight:hover{
+    background-color: rgb(33, 98, 10);  
+}
+
+
+.delete{
+    background-color: rgb(12, 1, 2); 
+}
+
+
+.delete:hover{
+    background-color: rgb(30, 4, 8);  
+}
+

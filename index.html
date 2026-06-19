@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    
+<link rel="stylesheet" href="style.css"> 
+<link rel="manifest" href="manifest.webmanifest"> 
+
+
+
+    <script>
+
+        	// Berechne den heutigen Tag des Jahres
+		var jetzt = new Date();
+		var start = new Date(jetzt.getFullYear(), 0, 0);
+		var diff = (jetzt - start) + ((start.getTimezoneOffset() - jetzt.getTimezoneOffset()) * 60 * 1000);
+		var tag = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+		// Berechne Faktor1 und Faktor2
+		var faktor1 = Math.pow(0.998098, tag-1);
+		var faktor2 = 1 / faktor1;
+
+	
+
+            // Ziffern und Operatoren eingeben
+
+        function appendOperation(operation) {
+            
+            document.getElementById('resultArea2').innerHTML = "";
+            let container = document.getElementById('resultArea');
+          
+            if (isNaN(operation) && (container.innerHTML.endsWith(' ') ||  container.innerHTML.endsWith('.') )) {
+                return;
+            }
+
+            document.getElementById('resultArea').innerHTML += operation;
+
+            setFontsizeByLength();
+
+        }
+
+             // Letztes Zeichen löschen
+                    function deleteLast() {
+            let container = document.getElementById('resultArea');
+            if(container.innerHTML.endsWith(' ')) {
+                container.innerHTML = container.innerHTML.slice(0, -3);
+            }
+            else{
+                container.innerHTML = container.innerHTML.slice(0, -1);
+            }
+
+            setFontsizeByLength();
+        }
+
+        // Schriftgröße an die Länge der Eingabe anpassen
+
+        function setFontsizeByLength() {
+
+            let length = document.getElementById('resultArea').innerHTML.length;
+
+            if (length > 10) {
+                document.getElementById("resultArea").style.fontSize = "32px";
+            }
+                else {
+
+                document.getElementById("resultArea").style.fontSize = "64px";
+
+                }
+        }
+
+
+        // Alles löschen
+        function allClear() {
+            document.getElementById('resultArea').innerHTML = "";
+            document.getElementById('resultArea2').innerHTML = "";
+
+        } 
+        
+        // GradidoRabatt ändern und Ergebnisse anpassen
+
+        function promptPercent() {
+
+           var percentTabelle =  document.getElementById("percent").firstChild.nodeValue;
+         
+
+            let percent = prompt("Please enter Gradido %", percentTabelle).replace(",",".");
+
+            if (percent != null) {
+
+                if (percent >0 && percent <=100  ) {
+                document.getElementById("percent").innerHTML = percent;
+                }
+                
+                else {
+                    if (percent > 100 ) {
+                        document.getElementById("percent").innerHTML = 100;
+                        
+                    }
+                    else {
+                    if (percent == 0 ) {
+                        document.getElementById("percent").innerHTML = 0;
+                        
+                    }
+                    
+                }
+                    
+                }
+            }
+            
+            calculateResult();
+        }
+
+        // Ergebnis berechnen
+
+        function calculateResult() {
+            let container = document.getElementById('resultArea');
+            let result = eval(container.innerHTML);
+            container.innerHTML = result.toFixed(2);
+            document.getElementById("resultArea").style.fontSize = "64px";
+            
+            var percentTabelle =  document.getElementById("percent").firstChild.nodeValue;
+            let euro = result *(100-percentTabelle)/100;
+            let gdd = result - euro;
+            let dankbar = faktor2 * gdd
+
+            if(document.getElementById("percent").innerHTML > 0) {
+
+
+            let container2 = document.getElementById('resultArea2');
+            container2.innerHTML ="€ " + euro.toFixed(2) + "<br/> GDD "  + gdd.toFixed(2) +"<br/>Factor " + faktor2.toFixed(4) + " | DankBar " + dankbar.toFixed(2) ;
+            }
+            else {
+                document.getElementById('resultArea2').innerHTML = "";   
+            }
+
+        }
+
+
+
+            // Dankbar in Gradido umrechnen
+        function setDankBarMode() {
+
+            calculateResult();
+            let container2 = document.getElementById('resultArea2');
+           
+            let container = document.getElementById('resultArea');
+            let result = eval(container.innerHTML).toFixed(2);
+            if( isNaN(result)) {
+                result = 0
+            }
+            var gdd = result*faktor1;
+            container2.innerHTML = "Factor " + faktor1.toFixed(4) + "<br/>" + result +" DankBar = " + gdd.toFixed(2) + " Gradido";
+            
+        }
+
+
+        
+            
+
+        
+    </script>
+
+
+
+</head>
+<body>
+
+
+    <div id="resultArea" class="resultArea">
+    </div>
+
+    <div id="discountTable"  class="resultArea">
+        <table class = "discountTable">
+            <tr>
+                <td id="discount" class = "discountTable">Gradido %</td>
+                <td id="percent" class = "discountTable">100</td>
+                
+            </tr>
+
+
+
+        </table>
+    </div>
+
+    <div id="resultArea2"  class="resultArea">
+      
+    </div>
+ 
+ 
+ <table>
+    <tr>
+        <td onclick="allClear()" class="delete">AC </td>
+        <td onclick="setDankBarMode()"  class="result" id="dankBarButton">DankBar<br/>to GDD</td>
+        <td onclick="promptPercent()" class="result">%</td>
+        <td onclick="deleteLast()" class="delete" >DEL</td>
+
+
+    </tr>
+
+    <tr>
+        <td onclick="appendOperation(7)">7</td>
+        <td onclick="appendOperation(8)">8</td>
+        <td onclick="appendOperation(9)">9</td>
+        <td onclick="appendOperation(' / ')" class="highlight">/</td>  
+    </tr>
+
+    <tr>
+        <td onclick="appendOperation(4)">4</td>
+        <td onclick="appendOperation(5)">5</td>
+        <td onclick="appendOperation(6)">6</td>
+        <td onclick="appendOperation(' * ')" class="highlight">x</td>
+
+    </tr>
+
+    <tr>
+        <td onclick="appendOperation(1)">1</td>
+        <td onclick="appendOperation(2)">2</td>
+        <td onclick="appendOperation(3)">3</td>
+        <td onclick="appendOperation(' - ')" class="highlight">–</td>
+        
+
+    </tr>
+
+    <tr>
+        <td onclick="appendOperation(0)">0</td>
+        <td onclick="appendOperation('.')">.</td>
+        <td onclick="calculateResult()" class="result">=</td>
+        <td onclick="appendOperation(' + ')" class="highlight">+</td>
+
+    </tr>
+
+
+ </table>
+</body>
+</html>

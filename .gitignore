@@ -1,0 +1,5 @@
+# macOS
+.DS_Store
+
+# Interne Übergabe-/Projektnotiz — nicht Teil der App, soll nicht ins öffentliche Repo
+UEBERGABE-github-deployment.md

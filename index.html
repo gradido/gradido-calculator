@@ -65,7 +65,7 @@
 
         // Ziffern und Operatoren eingeben (mit Live-Pruefung und -Formatierung)
         function appendOperation(operation) {
-            document.getElementById('resultArea2').innerHTML = "";
+            // Ergebnisse unten NICHT loeschen — sie bleiben bis "AC" stehen
             var display = document.getElementById('resultArea').innerHTML;
 
             var istOperator = (typeof operation === 'string') && /[+\-*/]/.test(operation);
@@ -96,7 +96,7 @@
 
         // Letztes Zeichen loeschen
         function deleteLast() {
-            document.getElementById('resultArea2').innerHTML = "";
+            // Ergebnisse unten NICHT loeschen — sie bleiben bis "AC" stehen
             var display = document.getElementById('resultArea').innerHTML;
             if (display === '') { return; }
             if (display.charAt(display.length - 1) === ' ') {

@@ -7,7 +7,7 @@
     <title>Calculator</title>
     <!-- Montserrat wird lokal via @font-face in style.css geladen (offline-faehig) -->
 <link rel="stylesheet" href="style.css">
-<link rel="manifest" href="manifest.webmanifest"> 
+<link rel="manifest" href="manifest.webmanifest">
 
 
 
@@ -23,52 +23,106 @@
 		var faktor1 = Math.pow(0.998098, tag-1);
 		var faktor2 = 1 / faktor1;
 
-	
 
-            // Ziffern und Operatoren eingeben
+        // --- Helfer fuer Zahlen-Formatierung (US-Stil: Punkt = Dezimal, Komma = Tausender) ---
 
-        function appendOperation(operation) {
-            
-            document.getElementById('resultArea2').innerHTML = "";
-            let container = document.getElementById('resultArea');
-          
-            if (isNaN(operation) && (container.innerHTML.endsWith(' ') ||  container.innerHTML.endsWith('.') )) {
-                return;
-            }
-
-            document.getElementById('resultArea').innerHTML += operation;
-
-            setFontsizeByLength();
-
+        // Die aktuell getippte Zahl = der Teil hinter dem letzten Operator
+        function currentNumber(display) {
+            var teile = display.split(/ [+\-*/] /);
+            return teile[teile.length - 1];
         }
 
-             // Letztes Zeichen löschen
-                    function deleteLast() {
-            let container = document.getElementById('resultArea');
-            if(container.innerHTML.endsWith(' ')) {
-                container.innerHTML = container.innerHTML.slice(0, -3);
-            }
-            else{
-                container.innerHTML = container.innerHTML.slice(0, -1);
+        // Ersetzt die aktuelle Zahl im Display durch 'neu'
+        function replaceCurrentNumber(display, neu) {
+            var re = / [+\-*/] /g, m, lastEnd = -1;
+            while ((m = re.exec(display)) !== null) { lastEnd = m.index + m[0].length; }
+            if (lastEnd === -1) { return neu; }
+            return display.slice(0, lastEnd) + neu;
+        }
+
+        // Setzt Tausender-Trenner (Komma) in den Ganzzahl-Teil; max. 2 Nachkommastellen
+        function formatNumberString(roh) {
+            if (roh === '') { return ''; }
+            var neg = '';
+            if (roh.charAt(0) === '-') { neg = '-'; roh = roh.slice(1); }
+            var teile = roh.split('.');
+            var ganz = teile[0].replace(/^0+(?=\d)/, '');                  // fuehrende Nullen weg
+            ganz = ganz.replace(/\B(?=(\d{3})+(?!\d))/g, ',');             // Tausender-Trenner
+            var ergebnis = neg + ganz;
+            if (teile.length > 1) { ergebnis += '.' + teile[1].slice(0, 2); }
+            return ergebnis;
+        }
+
+        // Ergebnis-Zahl einheitlich formatieren: 2 Nachkommastellen + Tausender-Trenner
+        function formatResult(zahl) {
+            if (!isFinite(zahl)) { return '0.00'; }
+            var neg = zahl < 0 ? '-' : '';
+            var teile = Math.abs(zahl).toFixed(2).split('.');
+            teile[0] = teile[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return neg + teile[0] + '.' + teile[1];
+        }
+
+
+        // Ziffern und Operatoren eingeben (mit Live-Pruefung und -Formatierung)
+        function appendOperation(operation) {
+            document.getElementById('resultArea2').innerHTML = "";
+            var display = document.getElementById('resultArea').innerHTML;
+
+            var istOperator = (typeof operation === 'string') && /[+\-*/]/.test(operation);
+
+            if (istOperator) {
+                var cur = currentNumber(display);
+                if (cur === '' || cur.charAt(cur.length - 1) === '.') { return; }   // kein Operator ohne abgeschlossene Zahl
+                if (display.charAt(display.length - 1) === ' ') { return; }          // kein doppelter Operator
+                display += operation;
+            } else if (operation === '.') {
+                var curP = currentNumber(display);
+                if (curP.indexOf('.') !== -1) { return; }                           // nur ein Punkt pro Zahl
+                if (curP === '') { display += '0'; }                                 // ".5" -> "0.5"
+                display += '.';
+            } else {
+                // Ziffer
+                var ziffer = String(operation);
+                var curD = currentNumber(display);
+                var p = curD.indexOf('.');
+                if (p !== -1 && (curD.length - p - 1) >= 2) { return; }              // max. 2 Nachkommastellen
+                var roh = curD.replace(/,/g, '') + ziffer;
+                display = replaceCurrentNumber(display, formatNumberString(roh));
             }
 
+            document.getElementById('resultArea').innerHTML = display;
+            setFontsizeByLength();
+        }
+
+        // Letztes Zeichen loeschen
+        function deleteLast() {
+            document.getElementById('resultArea2').innerHTML = "";
+            var display = document.getElementById('resultArea').innerHTML;
+            if (display === '') { return; }
+            if (display.charAt(display.length - 1) === ' ') {
+                display = display.slice(0, -3);                                      // " op " entfernen
+            } else {
+                var cur = currentNumber(display);
+                if (cur.charAt(cur.length - 1) === '.') {
+                    display = replaceCurrentNumber(display, cur.slice(0, -1));       // Punkt entfernen
+                } else {
+                    var roh = cur.replace(/,/g, '').slice(0, -1);                    // letzte Ziffer entfernen
+                    display = replaceCurrentNumber(display, roh === '' ? '' : formatNumberString(roh));
+                }
+            }
+            document.getElementById('resultArea').innerHTML = display;
             setFontsizeByLength();
         }
 
         // Schriftgröße an die Länge der Eingabe anpassen
-
         function setFontsizeByLength() {
-
             let length = document.getElementById('resultArea').innerHTML.length;
-
             if (length > 10) {
                 document.getElementById("resultArea").style.fontSize = "32px";
             }
-                else {
-
+            else {
                 document.getElementById("resultArea").style.fontSize = "64px";
-
-                }
+            }
         }
 
 
@@ -77,14 +131,14 @@
             document.getElementById('resultArea').innerHTML = "";
             document.getElementById('resultArea2').innerHTML = "";
 
-        } 
-        
+        }
+
         // GradidoRabatt ändern und Ergebnisse anpassen
 
         function promptPercent() {
 
            var percentTabelle =  document.getElementById("percent").firstChild.nodeValue;
-         
+
 
             let eingabe = prompt("Please enter Gradido %", percentTabelle);
             if (eingabe === null) { return; }   // "Abbrechen": Prozentsatz unveraendert lassen
@@ -95,23 +149,23 @@
                 if (percent >0 && percent <=100  ) {
                 document.getElementById("percent").innerHTML = percent;
                 }
-                
+
                 else {
                     if (percent > 100 ) {
                         document.getElementById("percent").innerHTML = 100;
-                        
+
                     }
                     else {
                     if (percent == 0 ) {
                         document.getElementById("percent").innerHTML = 0;
-                        
+
                     }
-                    
+
                 }
-                    
+
                 }
             }
-            
+
             calculateResult();
         }
 
@@ -156,7 +210,7 @@
         function safeCalc(ausdruck) {
             if (ausdruck == null) { return NaN; }
             if (!/^[0-9.,+\-*/ ]*$/.test(ausdruck)) { return NaN; }
-            var s = ausdruck.replace(/,/g, '.').trim();
+            var s = ausdruck.replace(/,/g, '').trim();   // Tausender-Trenner entfernen
             if (s === '') { return NaN; }
 
             // 1) In Zahlen und Operatoren zerlegen
@@ -206,8 +260,8 @@
 
             // 3) dann + und -
             var ergebnis = stufe[0].val;
-            for (var m = 1; m < stufe.length; m += 2) {
-                var o = stufe[m], r = stufe[m + 1];
+            for (var mm = 1; mm < stufe.length; mm += 2) {
+                var o = stufe[mm], r = stufe[mm + 1];
                 if (!o || o.op === undefined || !r || r.val === undefined) { return NaN; }
                 ergebnis = (o.op === '+') ? ergebnis + r.val : ergebnis - r.val;
             }
@@ -216,53 +270,40 @@
         }
 
         // Ergebnis berechnen
-
         function calculateResult() {
             let container = document.getElementById('resultArea');
             let result = safeCalc(container.innerHTML);
             if (isNaN(result)) { return; }   // leere oder unzulaessige Eingabe: nichts tun
-            container.innerHTML = result.toFixed(2);
+            container.innerHTML = formatResult(result);
             document.getElementById("resultArea").style.fontSize = "64px";
-            
+
             var percentTabelle =  document.getElementById("percent").firstChild.nodeValue;
             let euro = result *(100-percentTabelle)/100;
             let gdd = result - euro;
-            let dankbar = faktor2 * gdd
+            let dankbar = faktor2 * gdd;
 
             if(document.getElementById("percent").innerHTML > 0) {
-
-
-            let container2 = document.getElementById('resultArea2');
-            container2.innerHTML ="€ " + euro.toFixed(2) + "<br/> GDD "  + gdd.toFixed(2) +"<br/>Factor " + faktor2.toFixed(4) + " | DankBar " + dankbar.toFixed(2) ;
+                let container2 = document.getElementById('resultArea2');
+                container2.innerHTML ="€ " + formatResult(euro) + "<br/> GDD " + formatResult(gdd) + "<br/>Factor " + faktor2.toFixed(4) + " | DankBar " + formatResult(dankbar);
             }
             else {
-                document.getElementById('resultArea2').innerHTML = "";   
+                document.getElementById('resultArea2').innerHTML = "";
             }
-
         }
 
 
-
-            // Dankbar in Gradido umrechnen
+        // DankBar in Gradido umrechnen
         function setDankBarMode() {
-
             calculateResult();
             let container2 = document.getElementById('resultArea2');
-           
             let container = document.getElementById('resultArea');
             let zahl = safeCalc(container.innerHTML);
             if (isNaN(zahl)) { return; }   // leere oder unzulaessige Eingabe: nichts tun
-            let result = zahl.toFixed(2);
-            var gdd = result*faktor1;
-            container2.innerHTML = "Factor " + faktor1.toFixed(4) + "<br/>" + result +" DankBar = " + gdd.toFixed(2) + " Gradido";
-            
+            container.innerHTML = formatResult(zahl);
+            var gdd = zahl * faktor1;
+            container2.innerHTML = "Factor " + faktor1.toFixed(4) + "<br/>" + formatResult(zahl) + " DankBar = " + formatResult(gdd) + " Gradido";
         }
 
-
-        
-            
-
-        
     </script>
 
 
@@ -270,6 +311,7 @@
 </head>
 <body>
 
+    <img id="logo" src="gradido-coin.png" alt="Gradido Coin">
 
     <div id="resultArea" class="resultArea">
     </div>
@@ -279,7 +321,7 @@
             <tr>
                 <td id="discount" class = "discountTable">Gradido %</td>
                 <td id="percent" class = "discountTable">100</td>
-                
+
             </tr>
 
 
@@ -288,10 +330,10 @@
     </div>
 
     <div id="resultArea2"  class="resultArea">
-      
+
     </div>
- 
- 
+
+
  <table>
     <tr>
         <td onclick="allClear()" class="delete">AC </td>
@@ -306,7 +348,7 @@
         <td onclick="appendOperation(7)">7</td>
         <td onclick="appendOperation(8)">8</td>
         <td onclick="appendOperation(9)">9</td>
-        <td onclick="appendOperation(' / ')" class="highlight">/</td>  
+        <td onclick="appendOperation(' / ')" class="highlight">/</td>
     </tr>
 
     <tr>
@@ -322,7 +364,7 @@
         <td onclick="appendOperation(2)">2</td>
         <td onclick="appendOperation(3)">3</td>
         <td onclick="appendOperation(' - ')" class="highlight">–</td>
-        
+
 
     </tr>
 

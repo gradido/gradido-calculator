@@ -10,7 +10,7 @@
  * aus dem Cache. Alte Caches werden beim 'activate' automatisch gelöscht.
  */
 
-const CACHE_NAME = 'gradido-calc-v5';
+const CACHE_NAME = 'gradido-calc-v6';
 
 const ASSETS = [
     './',
@@ -18,6 +18,7 @@ const ASSETS = [
     './style.css',
     './manifest.webmanifest',
     './montserrat-latin-400.woff2',
+    './gradido-coin.png',
     './icon-192x192.png',
     './icon-256x256.png',
     './icon-384x384.png',

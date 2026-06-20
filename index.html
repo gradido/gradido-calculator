@@ -27,6 +27,31 @@
         // true direkt nach einem Ergebnis ("="): die naechste Ziffer beginnt eine neue Zahl
         var justCalculated = false;
 
+        // --- Einstellungen (im localStorage gespeichert; im iFrame ggf. nur fuer die Sitzung) ---
+        // factor      = Kaufkraft-Faktor: 1 GDD = factor x Landeswaehrung (Default 1)
+        // currency    = Anzeige-Kuerzel der Landeswaehrung (Default "€")
+        // showDankBar = DankBar-Zeile + "DankBar to GDD"-Taste anzeigen (Default true)
+        var settings = { factor: 1, currency: '€', showDankBar: true };
+
+        function loadSettings() {
+            try {
+                var raw = localStorage.getItem('gddCalcSettings');
+                if (raw) {
+                    var s = JSON.parse(raw);
+                    if (s && typeof s === 'object') {
+                        var f = parseFloat(s.factor);
+                        if (isFinite(f) && f > 0) { settings.factor = f; }
+                        if (typeof s.currency === 'string' && s.currency !== '') { settings.currency = s.currency; }
+                        if (typeof s.showDankBar === 'boolean') { settings.showDankBar = s.showDankBar; }
+                    }
+                }
+            } catch (e) { /* localStorage evtl. blockiert (iFrame-Partitionierung) -> Defaults */ }
+        }
+
+        function saveSettings() {
+            try { localStorage.setItem('gddCalcSettings', JSON.stringify(settings)); } catch (e) { /* ignorieren */ }
+        }
+
 
         // --- Helfer fuer Zahlen-Formatierung (US-Stil: Punkt = Dezimal, Komma = Tausender) ---
 
@@ -67,6 +92,56 @@
         }
 
 
+        // --- Klang (per Web Audio erzeugt, keine Audiodatei -> offline-faehig) ---
+        // Palette (432-Stimmung): Ziffern/Punkt gleiten 432->288 (Quinte abwaerts);
+        // Operatoren + Funktionstasten 648->432 (eine Quinte hoeher); "=" konstant 648,
+        // laenger; Warnung = 3 kurze Pulse auf 432 (verbotene Eingabe).
+        var __actx = null;
+        function __audioCtx() {
+            try {
+                var AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) { return null; }
+                if (!__actx) { __actx = new AC(); }
+                if (__actx.state === 'suspended') { __actx.resume(); }
+                return __actx;
+            } catch (e) { return null; }
+        }
+
+        // Ein Ton: gleitet von f1 nach f2 (f2===f1 -> konstant), Laenge in Sekunden.
+        function __tone(f1, f2, len, startAt) {
+            var ctx = __audioCtx();
+            if (!ctx) { return; }
+            var t = (startAt != null) ? startAt : ctx.currentTime;
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f1, t);
+            if (f2 && f2 !== f1) { osc.frequency.exponentialRampToValueAtTime(f2, t + Math.min(len, 0.08)); }
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.exponentialRampToValueAtTime(0.09, t + 0.010);   // 0.09 = Lautstaerke
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + len);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + len + 0.02);
+        }
+
+        function soundDigit() { __tone(432, 288, 0.09); }   // Ziffern + Dezimalpunkt
+        function soundFunc()  { __tone(648, 432, 0.09); }   // Operatoren + Funktionstasten
+        function soundEquals(){ __tone(648, 648, 0.30); }   // "=" : konstant, laenger
+
+        var __lastWarn = -1;
+        function soundWarn() {                               // Warnung: 3 Pulse auf 432, konstant
+            var ctx = __audioCtx();
+            if (!ctx) { return; }
+            var now = ctx.currentTime;
+            if (__lastWarn >= 0 && (now - __lastWarn) < 0.45) { return; }   // nicht stapeln
+            __lastWarn = now;
+            var d = 0.11, gap = 0.06;
+            for (var i = 0; i < 3; i++) { __tone(432, 432, d, now + i * (d + gap)); }
+        }
+
+
         // Ziffern und Operatoren eingeben (mit Live-Pruefung und -Formatierung)
         function appendOperation(operation) {
             // Ergebnisse unten NICHT loeschen — sie bleiben bis "AC" stehen
@@ -83,22 +158,25 @@
 
             if (istOperator) {
                 var cur = currentNumber(display);
-                if (cur === '' || cur.charAt(cur.length - 1) === '.') { return; }   // kein Operator ohne abgeschlossene Zahl
-                if (display.charAt(display.length - 1) === ' ') { return; }          // kein doppelter Operator
+                if (cur === '' || cur.charAt(cur.length - 1) === '.') { soundWarn(); return; }   // kein Operator ohne abgeschlossene Zahl
+                if (display.charAt(display.length - 1) === ' ') { soundWarn(); return; }          // kein doppelter Operator
                 display += operation;
+                soundFunc();
             } else if (operation === '.') {
                 var curP = currentNumber(display);
-                if (curP.indexOf('.') !== -1) { return; }                           // nur ein Punkt pro Zahl
-                if (curP === '') { display += '0'; }                                 // ".5" -> "0.5"
+                if (curP.indexOf('.') !== -1) { soundWarn(); return; }                           // nur ein Punkt pro Zahl
+                if (curP === '') { display += '0'; }                                              // ".5" -> "0.5"
                 display += '.';
+                soundDigit();
             } else {
                 // Ziffer
                 var ziffer = String(operation);
                 var curD = currentNumber(display);
                 var p = curD.indexOf('.');
-                if (p !== -1 && (curD.length - p - 1) >= 2) { return; }              // max. 2 Nachkommastellen
+                if (p !== -1 && (curD.length - p - 1) >= 2) { soundWarn(); return; }              // max. 2 Nachkommastellen
                 var roh = curD.replace(/,/g, '') + ziffer;
                 display = replaceCurrentNumber(display, formatNumberString(roh));
+                soundDigit();
             }
 
             document.getElementById('resultArea').innerHTML = display;
@@ -110,7 +188,7 @@
             // Ergebnisse unten NICHT loeschen — sie bleiben bis "AC" stehen
             justCalculated = false;
             var display = document.getElementById('resultArea').innerHTML;
-            if (display === '') { return; }
+            if (display === '') { soundWarn(); return; }
             if (display.charAt(display.length - 1) === ' ') {
                 display = display.slice(0, -3);                                      // " op " entfernen
             } else {
@@ -124,6 +202,7 @@
             }
             document.getElementById('resultArea').innerHTML = display;
             setFontsizeByLength();
+            soundFunc();
         }
 
         // Schriftgröße an die Länge der Eingabe anpassen
@@ -143,14 +222,13 @@
             document.getElementById('resultArea').innerHTML = "";
             document.getElementById('resultArea2').innerHTML = "";
             justCalculated = false;
+            soundFunc();
         }
 
         // GradidoRabatt ändern und Ergebnisse anpassen
-
         function promptPercent() {
-
-           var percentTabelle =  document.getElementById("percent").firstChild.nodeValue;
-
+            soundFunc();
+            var percentTabelle =  document.getElementById("percent").firstChild.nodeValue;
 
             let eingabe = prompt("Please enter Gradido %", percentTabelle);
             if (eingabe === null) { return; }   // "Abbrechen": Prozentsatz unveraendert lassen
@@ -180,41 +258,6 @@
 
             calculateResult();
         }
-
-        // Leiser Tasten-Klick, per Web Audio erzeugt (keine Audiodatei -> offline-faehig)
-        var __klangCtx = null;
-        function playClick() {
-            try {
-                var AC = window.AudioContext || window.webkitAudioContext;
-                if (!AC) { return; }
-                if (!__klangCtx) { __klangCtx = new AC(); }
-                var ctx = __klangCtx;
-                if (ctx.state === 'suspended') { ctx.resume(); }
-                // sanfter digitaler Blip: kurzer Sinus-Ton mit leichtem Abwaerts-Gleiten
-                var now = ctx.currentTime;
-                var osc = ctx.createOscillator();
-                var gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(432, now);            // Tonhoehe: groesser = heller
-                osc.frequency.exponentialRampToValueAtTime(288, now + 0.08);
-                // weiche Huellkurve, damit es nicht knackt: schneller Anstieg, sanftes Ausklingen
-                gain.gain.setValueAtTime(0.0001, now);
-                gain.gain.exponentialRampToValueAtTime(0.09, now + 0.010);   // 0.09 = Lautstaerke
-                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.11);
-            } catch (e) { /* Ton ist optional: niemals einen Fehler nach aussen tragen */ }
-        }
-
-        // Jede Taste bekommt den Klick (Capture-Phase: erst Klang, dann die Aktion)
-        window.addEventListener('DOMContentLoaded', function () {
-            var tasten = document.querySelectorAll('td[onclick]');
-            for (var t = 0; t < tasten.length; t++) {
-                tasten[t].addEventListener('click', playClick, true);
-            }
-        });
 
         // Sicherer Ersatz fuer eval(): wertet den eingegebenen Ausdruck aus.
         // Erlaubt nur Zahlen und die Operatoren + - * / (Punkt vor Strich).
@@ -282,32 +325,48 @@
             return ergebnis;
         }
 
-        // Ergebnis berechnen
+        // Ergebnis berechnen (ohne Klang; den spielt onEquals). Gibt true bei Erfolg.
         function calculateResult() {
             let container = document.getElementById('resultArea');
             let result = safeCalc(container.innerHTML);
-            if (isNaN(result)) { return; }   // leere oder unzulaessige Eingabe: nichts tun
+            if (isNaN(result)) { return false; }   // leere oder unzulaessige Eingabe: nichts tun
             container.innerHTML = formatResult(result);
             document.getElementById("resultArea").style.fontSize = "64px";
 
             var percentTabelle =  document.getElementById("percent").firstChild.nodeValue;
             let euro = result *(100-percentTabelle)/100;
-            let gdd = result - euro;
+            let gdd = (result - euro) / settings.factor;        // Kaufkraft-Faktor: 1 GDD = factor x Landeswaehrung
             let dankbar = faktor2 * gdd;
 
             if(document.getElementById("percent").innerHTML > 0) {
                 let container2 = document.getElementById('resultArea2');
-                container2.innerHTML ="€ " + formatResult(euro) + "<br/> GDD " + formatResult(gdd) + "<br/>Factor " + faktor2.toFixed(4) + " | DankBar " + formatResult(dankbar);
+                var lines = [];
+                lines.push(settings.currency + " " + formatResult(euro));
+                lines.push("GDD " + formatResult(gdd));
+                if (settings.showDankBar) {
+                    lines.push("Daily rate " + faktor2.toFixed(4) + " | DankBar " + formatResult(dankbar));
+                }
+                if (settings.factor !== 1) {
+                    lines.push("Purchasing power: 1 GDD = " + settings.factor + " " + settings.currency);
+                }
+                container2.innerHTML = lines.join("<br/>");
             }
             else {
                 document.getElementById('resultArea2').innerHTML = "";
             }
             justCalculated = true;
+            return true;
+        }
+
+        // "=" : rechnen + passenden Klang (Erfolg vs. Warnung)
+        function onEquals() {
+            if (calculateResult()) { soundEquals(); } else { soundWarn(); }
         }
 
 
         // DankBar in Gradido umrechnen
         function setDankBarMode() {
+            soundFunc();
             calculateResult();
             let container2 = document.getElementById('resultArea2');
             let container = document.getElementById('resultArea');
@@ -315,9 +374,55 @@
             if (isNaN(zahl)) { return; }   // leere oder unzulaessige Eingabe: nichts tun
             container.innerHTML = formatResult(zahl);
             var gdd = zahl * faktor1;
-            container2.innerHTML = "Factor " + faktor1.toFixed(4) + "<br/>" + formatResult(zahl) + " DankBar = " + formatResult(gdd) + " Gradido";
+            container2.innerHTML = "Daily rate " + faktor1.toFixed(4) + "<br/>" + formatResult(zahl) + " DankBar = " + formatResult(gdd) + " Gradido";
             justCalculated = true;
         }
+
+
+        // --- Einstellungs-Panel ---
+        function openSettings() {
+            soundFunc();
+            document.getElementById('setFactor').value = settings.factor;
+            document.getElementById('setCurrency').value = settings.currency;
+            document.getElementById('setDankBar').checked = settings.showDankBar;
+            document.getElementById('settingsOverlay').classList.add('open');
+        }
+
+        function closeSettings() {
+            var f = parseFloat(String(document.getElementById('setFactor').value).replace(',', '.'));
+            settings.factor = (isFinite(f) && f > 0) ? f : 1;
+            var c = document.getElementById('setCurrency').value;
+            settings.currency = (c && c.trim() !== '') ? c.trim() : '€';
+            settings.showDankBar = document.getElementById('setDankBar').checked;
+            saveSettings();
+            applyDankBarVisibility();
+            document.getElementById('settingsOverlay').classList.remove('open');
+            calculateResult();   // Anzeige mit neuen Werten aktualisieren (falls ein Ergebnis steht)
+            soundFunc();
+        }
+
+        // DankBar-Taste zeigen/verstecken; versteckt = inaktive Platzhalter-Flaeche
+        function applyDankBarVisibility() {
+            var btn = document.getElementById('dankBarButton');
+            if (!btn) { return; }
+            if (settings.showDankBar) {
+                btn.classList.add('result');
+                btn.classList.remove('blankKey');
+                btn.innerHTML = 'DankBar<br/>to GDD';
+                btn.setAttribute('onclick', 'setDankBarMode()');
+            } else {
+                btn.classList.remove('result');
+                btn.classList.add('blankKey');
+                btn.innerHTML = '';
+                btn.removeAttribute('onclick');
+            }
+        }
+
+        // Beim Start: Einstellungen laden + anwenden
+        window.addEventListener('DOMContentLoaded', function () {
+            loadSettings();
+            applyDankBarVisibility();
+        });
 
     </script>
 
@@ -327,6 +432,7 @@
 <body>
 
     <img id="logo" src="gradido-coin.png" alt="Gradido Coin">
+    <button id="gearBtn" onclick="openSettings()" aria-label="Settings" title="Settings">&#9881;</button>
 
     <div id="resultArea" class="resultArea"></div>
 
@@ -383,13 +489,33 @@
     <tr>
         <td onclick="appendOperation(0)">0</td>
         <td onclick="appendOperation('.')">.</td>
-        <td onclick="calculateResult()" class="result">=</td>
+        <td onclick="onEquals()" class="result">=</td>
         <td onclick="appendOperation(' + ')" class="highlight">+</td>
 
     </tr>
 
 
  </table>
+
+    <!-- Einstellungs-Overlay (Klick auf den Hintergrund schliesst + uebernimmt) -->
+    <div id="settingsOverlay" onclick="if(event.target===this) closeSettings()">
+        <div id="settingsPanel">
+            <h2>Settings</h2>
+            <div class="setRow">
+                <label for="setFactor">Purchasing power &mdash; 1 GDD =</label>
+                <input id="setFactor" type="number" min="0" step="any" inputmode="decimal">
+            </div>
+            <div class="setRow">
+                <label for="setCurrency">Currency</label>
+                <input id="setCurrency" type="text" maxlength="6">
+            </div>
+            <div class="setRow check">
+                <input id="setDankBar" type="checkbox">
+                <label for="setDankBar">Show DankBar</label>
+            </div>
+            <button id="settingsClose" onclick="closeSettings()">Done</button>
+        </div>
+    </div>
 
     <!-- Service Worker registrieren: offline-faehig + automatisches Update -->
     <script>
@@ -400,7 +526,7 @@
             navigator.serviceWorker.addEventListener('controllerchange', function () {
                 if (refreshing || !hadController) { return; }
                 refreshing = true;
-                window.location.reload();   // neue Version sofort uebernehmen (kein mehrfaches Neuladen noetig)
+                window.location.reload();   // neue Version sofort uebernehmen
             });
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('sw.js').then(function (reg) {

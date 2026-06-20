@@ -10,7 +10,7 @@
  * aus dem Cache. Alte Caches werden beim 'activate' automatisch gelöscht.
  */
 
-const CACHE_NAME = 'gradido-calc-v13';
+const CACHE_NAME = 'gradido-calc-v14';
 
 const ASSETS = [
     './',
@@ -47,20 +47,28 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Abrufen: zuerst aus dem Cache, sonst aus dem Netz; bei Seitenaufrufen
-// offline auf die zwischengespeicherte index.html zurückfallen.
+// Abrufen: NETWORK-FIRST — zuerst frisch aus dem Netz holen, damit online
+// immer die neueste Version erscheint (auch im iFrame auf gradido.net, der ja
+// immer online ist). Der Cache dient nur als Offline-Fallback. Erfolgreiche
+// Antworten aktualisieren den Cache, damit die installierte App offline bleibt.
 self.addEventListener('fetch', (event) => {
     const request = event.request;
     if (request.method !== 'GET') {
         return;
     }
     event.respondWith(
-        caches.match(request).then((cached) => {
-            return cached || fetch(request).catch(() => {
-                if (request.mode === 'navigate') {
-                    return caches.match('./index.html');
+        fetch(request)
+            .then((response) => {
+                if (response && response.ok && response.type === 'basic') {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
                 }
-            });
-        })
+                return response;
+            })
+            .catch(() => caches.match(request).then((cached) => {
+                if (cached) { return cached; }
+                if (request.mode === 'navigate') { return caches.match('./index.html'); }
+                return undefined;
+            }))
     );
 });

@@ -121,6 +121,90 @@ background-color: rgb(40, 40, 40);
 
 
 .delete:hover{
-    background-color: rgb(30, 4, 8);  
+    background-color: rgb(30, 4, 8);
+}
+
+/* --- Einstellungen: Zahnrad oben rechts (dezent, stoert die grosse Zahl nicht) --- */
+#gearBtn{
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    z-index: 11;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    line-height: 1;
+    color: rgb(138, 138, 138);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+#gearBtn:hover{ color: rgb(205, 205, 205); }
+
+/* --- Einstellungs-Overlay + Panel --- */
+#settingsOverlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+}
+#settingsOverlay.open{ display: flex; }
+
+#settingsPanel{
+    background: rgb(40, 40, 40);
+    color: rgb(255, 253, 253);
+    width: min(86vw, 340px);
+    border-radius: 10px;
+    padding: 22px 22px 18px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+#settingsPanel h2{
+    margin: 0 0 16px;
+    font-size: 19px;
+    font-weight: 400;
+}
+.setRow{ margin-bottom: 16px; }
+.setRow label{ display: block; margin-bottom: 6px; color: rgb(198, 190, 190); }
+.setRow input[type="number"],
+.setRow input[type="text"]{
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 16px;
+    font-family: inherit;
+    border: 1px solid rgb(90, 90, 90);
+    border-radius: 6px;
+    background: rgb(28, 28, 28);
+    color: rgb(255, 253, 253);
+}
+.setRow.check{ display: flex; align-items: center; gap: 10px; }
+.setRow.check label{ margin: 0; }
+.setRow.check input{ width: 20px; height: 20px; }
+#settingsClose{
+    width: 100%;
+    padding: 11px;
+    font-size: 17px;
+    font-family: inherit;
+    margin-top: 6px;
+    border: none;
+    border-radius: 6px;
+    background: rgb(9, 5, 64);
+    color: rgb(255, 253, 253);
+    cursor: pointer;
+}
+#settingsClose:hover{ background: rgb(10, 5, 76); }
+
+/* Leere Platzhalter-Taste (wenn DankBar ausgeblendet): Ziffern-Anthrazit, inaktiv */
+.blankKey{
+    background-color: rgb(20, 22, 18) !important;
+    pointer-events: none;
 }
 

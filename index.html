@@ -341,8 +341,7 @@
             if(document.getElementById("percent").innerHTML > 0) {
                 let container2 = document.getElementById('resultArea2');
                 var lines = [];
-                lines.push(settings.currency + " " + formatResult(euro));
-                lines.push("GDD " + formatResult(gdd));
+                lines.push(settings.currency + " " + formatResult(euro) + "  |  GDD " + formatResult(gdd));
                 if (settings.showDankBar) {
                     lines.push("Daily rate " + faktor2.toFixed(4) + " | DankBar " + formatResult(dankbar));
                 }
@@ -432,7 +431,9 @@
 <body>
 
     <img id="logo" src="gradido-coin.png" alt="Gradido Coin">
-    <button id="gearBtn" onclick="openSettings()" aria-label="Settings" title="Settings">&#9881;</button>
+    <div id="topbar">
+        <button id="gearBtn" onclick="openSettings()" aria-label="Settings" title="Settings">&#9881;</button>
+    </div>
 
     <div id="resultArea" class="resultArea"></div>
 

@@ -217,10 +217,21 @@
         }
 
 
+        // Sub-Ergebnis-Zeile(n) leeren — mit erzwungenem Repaint.
+        // Safari/WebKit zeichnet leere Flex-Container nicht immer neu, sonst bleibt
+        // die DankBar-Zeile als "Geist" stehen.
+        function clearSubResults() {
+            var el = document.getElementById('resultArea2');
+            el.innerHTML = "";
+            el.style.display = "none";
+            void el.offsetHeight;   // Reflow erzwingen
+            el.style.display = "";
+        }
+
         // Alles löschen
         function allClear() {
             document.getElementById('resultArea').innerHTML = "";
-            document.getElementById('resultArea2').innerHTML = "";
+            clearSubResults();
             justCalculated = false;
             soundFunc();
         }
@@ -351,7 +362,7 @@
                 container2.innerHTML = lines.join("<br/>");
             }
             else {
-                document.getElementById('resultArea2').innerHTML = "";
+                clearSubResults();
             }
             justCalculated = true;
             return true;

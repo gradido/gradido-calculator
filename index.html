@@ -31,7 +31,7 @@
         // factor      = Kaufkraft-Faktor: 1 GDD = factor x Landeswaehrung (Default 1)
         // currency    = Anzeige-Kuerzel der Landeswaehrung (Default "€")
         // showDankBar = DankBar-Zeile + "DankBar to GDD"-Taste anzeigen (Default true)
-        var settings = { factor: 1, currency: '€', showDankBar: true };
+        var settings = { factor: 1, currency: '€', showDankBar: true, percent: 100 };
 
         function loadSettings() {
             try {
@@ -43,6 +43,8 @@
                         if (isFinite(f) && f > 0) { settings.factor = f; }
                         if (typeof s.currency === 'string' && s.currency !== '') { settings.currency = s.currency; }
                         if (typeof s.showDankBar === 'boolean') { settings.showDankBar = s.showDankBar; }
+                        var pc = parseFloat(s.percent);
+                        if (isFinite(pc) && pc >= 0 && pc <= 100) { settings.percent = pc; }
                     }
                 }
             } catch (e) { /* localStorage evtl. blockiert (iFrame-Partitionierung) -> Defaults */ }
@@ -236,38 +238,26 @@
             soundFunc();
         }
 
-        // GradidoRabatt ändern und Ergebnisse anpassen
-        function promptPercent() {
+        // GradidoRabatt per Overlay einstellen (Zahlenfeld wie die Einstellungen)
+        function openPercent() {
             soundFunc();
-            var percentTabelle =  document.getElementById("percent").firstChild.nodeValue;
+            var inp = document.getElementById('pctInput');
+            inp.value = settings.percent;
+            document.getElementById('percentOverlay').classList.add('open');
+            try { inp.focus(); inp.select(); } catch (e) {}   // Komfort: Zahlenfeld gleich aktiv
+        }
 
-            let eingabe = prompt("Please enter Gradido %", percentTabelle);
-            if (eingabe === null) { return; }   // "Abbrechen": Prozentsatz unveraendert lassen
-            let percent = eingabe.replace(",",".");
-
-            if (percent != null) {
-
-                if (percent >0 && percent <=100  ) {
-                document.getElementById("percent").innerHTML = percent;
-                }
-
-                else {
-                    if (percent > 100 ) {
-                        document.getElementById("percent").innerHTML = 100;
-
-                    }
-                    else {
-                    if (percent == 0 ) {
-                        document.getElementById("percent").innerHTML = 0;
-
-                    }
-
-                }
-
-                }
-            }
-
+        function closePercent() {
+            var v = parseFloat(String(document.getElementById('pctInput').value).replace(',', '.'));
+            if (!isFinite(v)) { v = settings.percent; }       // leer/ungueltig -> unveraendert
+            if (v < 0) { v = 0; }
+            if (v > 100) { v = 100; }
+            settings.percent = v;
+            document.getElementById('percent').innerHTML = v;
+            saveSettings();
+            document.getElementById('percentOverlay').classList.remove('open');
             calculateResult();
+            soundFunc();
         }
 
         // Sicherer Ersatz fuer eval(): wertet den eingegebenen Ausdruck aus.
@@ -432,6 +422,7 @@
         window.addEventListener('DOMContentLoaded', function () {
             loadSettings();
             applyDankBarVisibility();
+            document.getElementById('percent').innerHTML = settings.percent;
         });
 
     </script>
@@ -468,7 +459,7 @@
     <tr>
         <td onclick="allClear()" class="delete">AC </td>
         <td onclick="setDankBarMode()"  class="result" id="dankBarButton">DankBar<br/>to GDD</td>
-        <td onclick="promptPercent()" class="result">%</td>
+        <td onclick="openPercent()" class="result">%</td>
         <td onclick="deleteLast()" class="delete" >DEL</td>
 
 
@@ -526,6 +517,18 @@
                 <label for="setDankBar">Show DankBar</label>
             </div>
             <button id="settingsClose" onclick="closeSettings()">Done</button>
+        </div>
+    </div>
+
+    <!-- Gradido-%-Overlay (Klick auf den Hintergrund schliesst + uebernimmt) -->
+    <div id="percentOverlay" onclick="if(event.target===this) closePercent()">
+        <div id="percentPanel">
+            <h2>Gradido %</h2>
+            <div class="setRow">
+                <label for="pctInput">Gradido share (0&ndash;100 %)</label>
+                <input id="pctInput" type="number" min="0" max="100" step="any" inputmode="numeric">
+            </div>
+            <button id="percentClose" onclick="closePercent()">Done</button>
         </div>
     </div>
 

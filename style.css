@@ -218,3 +218,38 @@ background-color: rgb(40, 40, 40);
     pointer-events: none;
 }
 
+/* Gradido-%-Overlay (gleiche Optik wie die Einstellungen) */
+#percentOverlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+}
+#percentOverlay.open{ display: flex; }
+#percentPanel{
+    background: rgb(40, 40, 40);
+    color: rgb(255, 253, 253);
+    width: min(86vw, 340px);
+    border-radius: 10px;
+    padding: 22px 22px 18px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+#percentPanel h2{ margin: 0 0 16px; font-size: 19px; font-weight: 400; }
+#percentClose{
+    width: 100%;
+    padding: 11px;
+    font-size: 17px;
+    font-family: inherit;
+    margin-top: 6px;
+    border: none;
+    border-radius: 6px;
+    background: rgb(9, 5, 64);
+    color: rgb(255, 253, 253);
+    cursor: pointer;
+}
+#percentClose:hover{ background: rgb(10, 5, 76); }
+

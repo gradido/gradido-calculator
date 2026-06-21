@@ -545,7 +545,7 @@
             });
             window.addEventListener('load', function () {
                 navigator.serviceWorker.register('sw.js').then(function (reg) {
-                    reg.update();   // bei jedem Start auf neue Version pruefen
+                    if (navigator.onLine) { reg.update(); }   // nur online auf neue Version pruefen (offline keine Netz-Nachfrage)
                 }).catch(function (err) {
                     console.error('Service-Worker-Registrierung fehlgeschlagen:', err);
                 });

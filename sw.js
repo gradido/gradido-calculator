@@ -10,7 +10,7 @@
  * aus dem Cache. Alte Caches werden beim 'activate' automatisch gelöscht.
  */
 
-const CACHE_NAME = 'gradido-calc-v17';
+const CACHE_NAME = 'gradido-calc-v18';
 
 const ASSETS = [
     './',
@@ -47,28 +47,34 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Abrufen: NETWORK-FIRST — zuerst frisch aus dem Netz holen, damit online
-// immer die neueste Version erscheint (auch im iFrame auf gradido.net, der ja
-// immer online ist). Der Cache dient nur als Offline-Fallback. Erfolgreiche
-// Antworten aktualisieren den Cache, damit die installierte App offline bleibt.
+// Abrufen: STALE-WHILE-REVALIDATE — sofort aus dem Cache antworten (schnell;
+// offline OHNE Netz-Zugriff -> keine "kein Internet"-Nachfrage), und nur WENN
+// online im Hintergrund frisch nachladen, um den Cache fuer den naechsten Start
+// zu aktualisieren. So bleibt die App voll offline-tauglich UND aktualisiert sich
+// selbst (neue Inhalte sind beim naechsten Start da), ohne Neu-Installation.
 self.addEventListener('fetch', (event) => {
     const request = event.request;
     if (request.method !== 'GET') {
         return;
     }
     event.respondWith(
-        fetch(request)
-            .then((response) => {
-                if (response && response.ok && response.type === 'basic') {
-                    const copy = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
-                }
-                return response;
-            })
-            .catch(() => caches.match(request).then((cached) => {
-                if (cached) { return cached; }
-                if (request.mode === 'navigate') { return caches.match('./index.html'); }
-                return undefined;
-            }))
+        caches.match(request).then((cached) => {
+            // Hintergrund-Aktualisierung NUR wenn online; offline nie ans Netz greifen.
+            const fresh = (self.navigator && self.navigator.onLine)
+                ? fetch(request).then((response) => {
+                    if (response && response.ok && response.type === 'basic') {
+                        const copy = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy)).catch(() => {});
+                    }
+                    return response;
+                }).catch(() => null)
+                : Promise.resolve(null);
+
+            if (cached) {
+                event.waitUntil(fresh);   // Hintergrund-Update am Leben halten, aber sofort den Cache liefern
+                return cached;
+            }
+            return fresh.then((r) => r || (request.mode === 'navigate' ? caches.match('./index.html') : undefined));
+        })
     );
 });

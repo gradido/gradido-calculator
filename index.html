@@ -31,6 +31,7 @@
         // factor      = Kaufkraft-Faktor: 1 GDD = factor x Landeswaehrung (Default 1)
         // currency    = Anzeige-Kuerzel der Landeswaehrung (Default "€")
         // showDankBar = DankBar-Zeile + "DankBar to GDD"-Taste anzeigen (Default true)
+        var APP_VERSION = '2.0';   // langsam zaehlende, menschliche App-Version (getrennt von der schnellen SW-/Cache-Version)
         var settings = { factor: 1, currency: '€', showDankBar: true, percent: 100 };
 
         function loadSettings() {
@@ -379,12 +380,31 @@
         }
 
 
+        // Versionsanzeige in den Einstellungen: App-Version + (falls vorhanden) aktive SW-/Cache-Version
+        function showVersion() {
+            var el = document.getElementById('versionInfo');
+            if (!el) { return; }
+            el.textContent = 'App ' + APP_VERSION;
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                try {
+                    var ch = new MessageChannel();
+                    ch.port1.onmessage = function (e) {
+                        if (e.data && e.data.swVersion) {
+                            el.textContent = 'App ' + APP_VERSION + ' · SW ' + String(e.data.swVersion).replace('gradido-calc-', '');
+                        }
+                    };
+                    navigator.serviceWorker.controller.postMessage('version', [ch.port2]);
+                } catch (e) { /* egal */ }
+            }
+        }
+
         // --- Einstellungs-Panel ---
         function openSettings() {
             soundFunc();
             document.getElementById('setFactor').value = settings.factor;
             document.getElementById('setCurrency').value = settings.currency;
             document.getElementById('setDankBar').checked = settings.showDankBar;
+            showVersion();
             document.getElementById('settingsOverlay').classList.add('open');
         }
 
@@ -517,6 +537,7 @@
                 <label for="setDankBar">Show DankBar</label>
             </div>
             <button id="settingsClose" onclick="closeSettings()">Done</button>
+            <div id="versionInfo">App …</div>
         </div>
     </div>
 

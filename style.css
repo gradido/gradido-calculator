@@ -253,3 +253,6 @@ background-color: rgb(40, 40, 40);
 }
 #percentClose:hover{ background: rgb(10, 5, 76); }
 
+/* Versionsnummer unten links im Einstellungs-Panel (klein, dezent) */
+#versionInfo{ margin-top: 14px; font-size: 12px; color: rgb(120, 120, 120); text-align: left; }
+

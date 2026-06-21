@@ -10,7 +10,7 @@
  * aus dem Cache. Alte Caches werden beim 'activate' automatisch gelöscht.
  */
 
-const CACHE_NAME = 'gradido-calc-v18';
+const CACHE_NAME = 'gradido-calc-v19';
 
 const ASSETS = [
     './',
@@ -77,4 +77,11 @@ self.addEventListener('fetch', (event) => {
             return fresh.then((r) => r || (request.mode === 'navigate' ? caches.match('./index.html') : undefined));
         })
     );
+});
+
+// Auf Anfrage der Seite die eigene Cache-Version melden (fuer die Versionsanzeige in den Einstellungen).
+self.addEventListener('message', (event) => {
+    if (event.data === 'version' && event.ports && event.ports[0]) {
+        event.ports[0].postMessage({ swVersion: CACHE_NAME });
+    }
 });
